@@ -3,10 +3,14 @@ const colorKeys = ["flower", "leaves", "endLeaves", "endLeavesStroke"];
 let circles = [];
 let dots = [];
 let centerSphereSize,endSphereSize,endSphereStroke;
+let m = 1;
+
 
 function setup() { 
   createCanvas(windowWidth, windowHeight);
   initializeElements();
+  numDots = int((width * height) / 500);
+
 }
 
 function initializeElements() {
@@ -45,17 +49,16 @@ function initializeElements() {
   }
 
   angleMode(DEGREES);
-  centerSphereSize = random(10, 30); // size of the cirle in the center of the flower
-  endSphereSize = centerSphereSize/2; // size of the circle in the end of the leaves
-  endSphereStroke = endSphereSize/3; // size of the circle stroke in the end of the leaves
-
-  // Initialize background dots
-  initializeDots(int((width*height)/800));
 }
 
 // Main drawing function
 function draw() {
   background(251, 176, 59); // Set background color
+
+/* if (frameCount > 360){
+    drawDots();
+    }
+*/
   
   for (let i = 0; i < circles.length; i++) {
     /* 
@@ -68,31 +71,73 @@ function draw() {
      */ 
     drawFlower(circles[i].x, circles[i].y, circles[i].leafCount, circles[i].r, circles[i].colors); 
   }
-  drawDots();
+
+
+
 }
 
 // Draw flowers
 function drawFlower(x, y, leafCount, leafLength, colors) {
   push();
   translate(x, y);
-  let angleStep = 360 / leafCount; // Rotation angle per leaf
 
-  // Draw central sphere
-  fill(color(colors.flower));
-  noStroke();
-  ellipse(0, 0, centerSphereSize, centerSphereSize); // Draw central sphere
+  if (frameCount > 545){
+    rotate(frameCount*0.5);
+    }
+
+  if (frameCount < 515){
+  centerSphereSize = 30; // size of the cirle in the center of the flower
+  }
+  if (frameCount > 515){
+    centerSphereSize = 30+(frameCount-515); // size of the cirle in the center of the flower
+    }
+  if (frameCount > 600){
+    centerSphereSize = 115; // size of the cirle in the center of the flower
+    }
+
+
+  endSphereSize = 1+frameCount/30;
+  endSphereStroke = 1; // size of the circle stroke in the end of the leaves
+
+  if (frameCount < 360){
+   angleStep = frameCount / leafCount; // Rotation angle per leaf
+  }
+  if (frameCount > 360){
+   angleStep = 360 / leafCount; // Rotation angle per leaf
+  }
+
 
   // Draw leaves
   for (let i = 0; i < leafCount; i++) {
     drawLeaves(angleStep, leafLength,colors); // Pass leaf length to drawing function
   }
     
+  // Draw central sphere
+  fill(color(colors.flower));
+  noStroke();
+  ellipse(0, 0, centerSphereSize, centerSphereSize); // Draw central sphere
+
   pop();
 }
 
 // Draw flowers
 function drawLeaves(angle, leafLength,colors) {
-  let segments = 15; // number of segments per the length of the leaf (curve)
+
+
+
+  if (frameCount < 360){
+  segments = 15;}
+  if (frameCount > 360){
+  segments = lerp(15, 20, 0.02);
+  }
+  if (frameCount > 400){
+    segments = lerp(20, 30, 0.01);
+    }
+  if (frameCount > 415){
+    segments = 30;
+    }
+  
+  // number of segments per the length of the leaf (curve)
   let px, py;
 
   //attributes of the leaves (curve)
@@ -106,7 +151,21 @@ function drawLeaves(angle, leafLength,colors) {
   // leaf curve
   for (let i = 0; i < segments; i++) {
     px = map(i, 0, segments, 0, leafLength); //define x position of the end of the leaf curve
-    py = sin(i * 10) * 50; //define y position of the end of the leaf curve, increase frequency and amplitude, make curvature more obvious
+
+    if (frameCount < 360){
+      py = sin(i * 10) * 50; //define y position of the end of the leaf curve, increase frequency and amplitude, make curvature more obvious
+     }
+    if (frameCount > 360){
+      py2 = sin(i * 10) * 50*0.5
+      py1 = sin(i * 10) * (frameCount-360)*0.5; //define y position of the end of the leaf curve, increase frequency and amplitude, make curvature more obvious
+  
+      py = lerp(py1, py2, 0.03)
+        }
+     if (frameCount > 520){
+      py = sin(i * 10) * 80; //define y position of the end of the leaf curve, increase frequency and amplitude, make curvature more obvious
+     }
+
+    
     vertex(px, py);
   }
   endShape();
@@ -131,36 +190,24 @@ function createRandomDotsAttributes() {
     y: random(height), // Random Y-coordinate
     size: random(5, 15), // Set dot size between 5 and 15
     chosenColor: randomColor(), // Randomly select color from color pallet
-    noiseOffset: random(300) // Random noise offset for unique movement
   };
 }
-//////
 
-// Initialize background dots
-function initializeDots(numDots) {
-  dots = [];
-  for (let i = 0; i < numDots; i++) {
-    dots.push(createRandomDotsAttributes());
-  }
-}
-
-// Draw and Move dots
+//draw bg dots
 function drawDots() {
+
+  for (let i = 0; i < numDots; i++) {
+    let size = random(5, 10); // Random size range for dots
+    let x = random(size / 2, width - size / 2); // Ensure within horizontal boundaries
+    let y = random(size / 2, height - size / 2); // Ensure within vertical boundaries
+    let chosenColor = random([color(229, 67, 121,20), color(120, 34, 33,20), color(203, 1, 11,20), color(18, 12, 8,20), color(122, 70, 118,20)]);
+    dots.push({ x, y, size, chosenColor}); // Store properties
+  }
+
   noStroke(); // Remove outline
   for (let dot of dots) {
     fill(dot.chosenColor);
-      
-    // Update position using Perlin noise and constrain within boundaries
-    dot.x += map(noise(dot.noiseOffset), 0, 1, -2, 2);
-    dot.y += map(noise(dot.noiseOffset + 100), 0, 1, -2, 2);
-
     ellipse(dot.x, dot.y, dot.size * 0.5, dot.size * 0.5); // Shrink dot size and draw
-    dot.noiseOffset += 0.01; // Increase noise offset for smooth movement
-  
-    // Keep dots within canvas boundaries
-    if (dot.x < 0 || width < dot.x || dot.y < 0 || height < dot.y){
-      dot = createRandomDotsAttributes();
-    }
   }
 }
 
